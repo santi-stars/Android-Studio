@@ -2,6 +2,7 @@ package com.svalero.listacompra;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.room.Room;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -10,16 +11,18 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
+
+import com.svalero.listacompra.database.AppDatabase;
+import com.svalero.listacompra.domain.Product;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements AdapterView.OnItemClickListener {
 
-    public static ArrayList<Product> products;
+    public List<Product> products;
     private ArrayAdapter<Product> productsAdapter;   //ArrayList de ANDROID que enlaza ArrayList
     // con el ListView
 
@@ -28,9 +31,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        products = new ArrayList<>();
-
-        ListView lvProducts = findViewById(R.id.products_list);
+        products = new ArrayList<>(); // Inicia el List que guardara los productos
+        ListView lvProducts = findViewById(R.id.products_list); // Inicia el ListView
         productsAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, products);
         //ArrayAdapter lo construimos(contexto(activity donde estoy), layaout elemento simple de lista,
         // products (ArrayList))
@@ -44,8 +46,20 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     protected void onResume() {
         super.onResume();
 
-        productsAdapter.notifyDataSetChanged();
+        refreshList();
         makeSummary();
+    }
+
+    public void refreshList() {
+        loadProducts();
+        productsAdapter.notifyDataSetChanged();
+    }
+
+    private void loadProducts() {
+        products.clear(); // Limpia el objeto products // NUNCA hacer un NEW
+        AppDatabase db = Room.databaseBuilder(getApplicationContext(), AppDatabase.class, "products").allowMainThreadQueries()
+                .fallbackToDestructiveMigration().build();
+        products.addAll(db.productDao().getAll()); // Vuelve a cargar todos los productos
     }
 
     private void makeSummary() {
@@ -83,6 +97,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         intent.putExtra("name", product.getName()); // "name" es el nombre con el que queremos mandar el dato
         // en este mandamos en el intent el nombre del producto, podemos pasar otros tipos de datos u objetos
         intent.putExtra("category", product.getCategory()); // mandamos en el intent el nombre del producto
+
+        // PRUEBA MANDAR IMAGEN A PRODUCT DETAIL
+        // intent.putExtra("image", product.getImage());
         startActivity(intent);
     }
 }
